@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/room_provider.dart';
+import '../../providers/wallet_provider.dart';
 import '../../models/room_model.dart';
-import '../../utils/theme.dart';
-import '../../utils/constants.dart';
+import '../../utils/sodfa_styles.dart';
+import '../rooms/voice_room_screen.dart';
+import '../discover/discover_screen.dart';
+import '../wallet/wallet_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,15 +19,116 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final roomProvider = Get.find<RoomProvider>();
   final auth = Get.find<AuthProvider>();
-  final searchController = TextEditingController();
-  String selectedCategory = 'all';
-  String selectedCountry = 'all';
+  int currentNavIndex = 0;
+
+  final List<Widget> _screens = [
+    const _HomeTab(),
+    const VoiceRoomScreen(),
+    const DiscoverScreen(),
+    const WalletScreen(),
+  ];
 
   @override
   void initState() {
     super.initState();
     roomProvider.fetchRooms();
   }
+
+  void switchToTab(int index) {
+    setState(() => currentNavIndex = index);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: SodfaStyles.backgroundLight,
+      body: IndexedStack(
+        index: currentNavIndex,
+        children: _screens,
+      ),
+      bottomNavigationBar: _buildBottomNav(),
+    );
+  }
+
+  Widget _buildBottomNav() {
+    return Container(
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            color: SodfaStyles.primaryPurple.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: BottomNavigationBar(
+        currentIndex: currentNavIndex,
+        selectedItemColor: SodfaStyles.primaryPurple,
+        unselectedItemColor: SodfaStyles.textHint,
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        selectedFontSize: 12,
+        unselectedFontSize: 11,
+        items: [
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label: 'الرئيسية',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.wifi_tethering_outlined),
+            activeIcon: Icon(Icons.wifi_tethering),
+            label: 'الغرف الصوتية',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.favorite_border),
+            activeIcon: Icon(Icons.favorite),
+            label: 'التعارف',
+          ),
+          BottomNavigationBarItem(
+            icon: Obx(() => Badge(
+                  isLabelVisible: (auth.user.value?.balance ?? 0) > 0,
+                  label: Text(
+                    '${auth.user.value?.balance.toInt() ?? 0}',
+                    style: SodfaStyles.badgeText,
+                  ),
+                  child: const Icon(Icons.account_balance_wallet_outlined),
+                )),
+            activeIcon: Obx(() => Badge(
+                  isLabelVisible: (auth.user.value?.balance ?? 0) > 0,
+                  label: Text(
+                    '${auth.user.value?.balance.toInt() ?? 0}',
+                    style: SodfaStyles.badgeText,
+                  ),
+                  child: const Icon(Icons.account_balance_wallet),
+                )),
+            label: 'المحفظة',
+          ),
+        ],
+        onTap: (index) {
+          if (index == 3) {
+            Get.find<WalletProvider>().fetchBalance();
+          }
+          setState(() => currentNavIndex = index);
+        },
+      ),
+    );
+  }
+}
+
+class _HomeTab extends StatefulWidget {
+  const _HomeTab();
+
+  @override
+  State<_HomeTab> createState() => _HomeTabState();
+}
+
+class _HomeTabState extends State<_HomeTab> {
+  final roomProvider = Get.find<RoomProvider>();
+  final auth = Get.find<AuthProvider>();
+  final searchController = TextEditingController();
+  String selectedCategory = 'all';
 
   @override
   void dispose() {
@@ -35,61 +139,91 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: SodfaStyles.backgroundLight,
       appBar: AppBar(
-        title: const Text('يلا نسوالف'),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.chat, size: 20, color: Colors.white),
+            ),
+            const SizedBox(width: 10),
+            const Text('يلا نسوالف',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+          ],
+        ),
+        backgroundColor: SodfaStyles.primaryPurple,
+        elevation: 0,
         actions: [
           Obx(() => GestureDetector(
-            onTap: () => Get.toNamed('/profile'),
-            child: CircleAvatar(
-              radius: 18,
-              backgroundImage: auth.user.value?.avatar != null && auth.user.value!.avatar.isNotEmpty
-                  ? NetworkImage(auth.user.value!.avatar)
-                  : null,
-              child: auth.user.value?.avatar == null || auth.user.value!.avatar.isEmpty
-                  ? Text(auth.user.value?.displayName.isNotEmpty == true
-                      ? auth.user.value!.displayName[0].toUpperCase()
-                      : 'U')
-                  : null,
-            ),
-          )),
-          const SizedBox(width: 16),
+                onTap: () => Get.toNamed('/profile'),
+                child: Container(
+                  margin: const EdgeInsets.only(right: 12),
+                  child: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: Colors.white.withOpacity(0.2),
+                    backgroundImage:
+                        auth.user.value?.avatar != null &&
+                                auth.user.value!.avatar.isNotEmpty
+                            ? NetworkImage(auth.user.value!.avatar)
+                            : null,
+                    child: auth.user.value?.avatar == null ||
+                            auth.user.value!.avatar.isEmpty
+                        ? Text(
+                            auth.user.value?.displayName.isNotEmpty == true
+                                ? auth.user.value!.displayName[0].toUpperCase()
+                                : 'U',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold),
+                          )
+                        : null,
+                  ),
+                ),
+              )),
         ],
       ),
       body: Column(
         children: [
           _buildSearchBar(),
           _buildCategories(),
-          _buildCountries(),
+          _buildVoiceRoomsSection(),
+          _buildSectionHeader(),
           Expanded(child: _buildRoomsList()),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => Get.toNamed('/create-room'),
+        backgroundColor: SodfaStyles.primaryPurple,
         child: const Icon(Icons.add),
       ),
-      bottomNavigationBar: _buildBottomNav(),
     );
   }
 
   Widget _buildSearchBar() {
     return Padding(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
       child: TextField(
         controller: searchController,
         decoration: InputDecoration(
           hintText: 'ابحث عن غرفة...',
-          prefixIcon: const Icon(Icons.search),
+          prefixIcon: const Icon(Icons.search, color: SodfaStyles.textHint),
           suffixIcon: IconButton(
-            icon: const Icon(Icons.filter_list),
+            icon: const Icon(Icons.filter_list, color: SodfaStyles.textHint),
             onPressed: () {},
           ),
           filled: true,
           fillColor: Colors.white,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
             borderSide: BorderSide.none,
           ),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
         onSubmitted: (value) {
           roomProvider.fetchRooms(search: value);
@@ -99,49 +233,225 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildCategories() {
+    final categories = [
+      'الكل',
+      'عام',
+      'أصدقاء',
+      'دراسة',
+      'ألعاب',
+      'رياضة',
+      'تقنية',
+      'ترفيه'
+    ];
     return SizedBox(
-      height: 40,
-      child: ListView(
+      height: 36,
+      child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        children: [
-          'الكل', 'عام', 'أصدقاء', 'دراسة', 'ألعاب', 'رياضة', 'تقنية', 'ترفيه',
-        ].map((cat) {
-          final isSelected = selectedCategory == cat || (selectedCategory == 'all' && cat == 'الكل');
-          return Padding(
-            padding: const EdgeInsets.only(left: 8),
-            child: ChoiceChip(
-              label: Text(cat),
-              selected: isSelected,
-              onSelected: (_) {
-                setState(() => selectedCategory = cat == 'الكل' ? 'all' : cat);
-                roomProvider.fetchRooms(category: selectedCategory);
-              },
-              selectedColor: AppTheme.primaryColor,
-              labelStyle: TextStyle(
-                color: isSelected ? Colors.white : Colors.grey.shade700,
-                fontSize: 13,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: categories.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 6),
+        itemBuilder: (context, index) {
+          final cat = categories[index];
+          final isSelected = selectedCategory == cat ||
+              (selectedCategory == 'all' && cat == 'الكل');
+          return GestureDetector(
+            onTap: () {
+              setState(() =>
+                  selectedCategory = cat == 'الكل' ? 'all' : cat);
+              roomProvider.fetchRooms(category: selectedCategory);
+            },
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? SodfaStyles.primaryPurple
+                    : Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isSelected
+                      ? SodfaStyles.primaryPurple
+                      : SodfaStyles.dividerColor,
+                ),
+              ),
+              child: Text(
+                cat,
+                style: TextStyle(
+                  color: isSelected
+                      ? Colors.white
+                      : SodfaStyles.textSecondary,
+                  fontSize: 13,
+                  fontWeight:
+                      isSelected ? FontWeight.w600 : FontWeight.w400,
+                ),
               ),
             ),
           );
-        }).toList(),
+        },
       ),
     );
   }
 
-  Widget _buildCountries() {
+  Widget _buildVoiceRoomsSection() {
+    final voiceRooms = roomProvider.rooms
+        .where((r) => r.type == 'voice' || r.category == 'voice')
+        .toList();
+
+    if (voiceRooms.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: SodfaStyles.primaryPurple.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.wifi_tethering,
+                    size: 16, color: SodfaStyles.primaryPurple),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'الغرف الصوتية',
+                style: SodfaStyles.sectionTitle,
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: () {
+                  final homeState = context
+                      .findAncestorStateOfType<_HomeScreenState>();
+                  homeState?.switchToTab(1);
+                },
+                child: const Text(
+                  'عرض الكل',
+                  style: TextStyle(
+                    color: SodfaStyles.primaryPurple,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: 110,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: voiceRooms.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (context, index) {
+              return _buildVoiceRoomMiniCard(voiceRooms[index]);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVoiceRoomMiniCard(RoomModel room) {
+    return GestureDetector(
+      onTap: () => Get.toNamed('/room', arguments: room),
+      child: Container(
+        width: 140,
+        decoration: SodfaStyles.voiceRoomDecoration,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: SodfaStyles.successGreen.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.wifi_tethering,
+                        size: 16, color: SodfaStyles.successGreen),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: SodfaStyles.successGreen.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text('مباشر',
+                        style: TextStyle(
+                            fontSize: 9, color: SodfaStyles.successGreen)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                room.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+              ),
+              const Spacer(),
+              Row(
+                children: [
+                  const Icon(Icons.people,
+                      size: 12, color: SodfaStyles.textHint),
+                  const SizedBox(width: 4),
+                  Text('${room.memberCount}',
+                      style: const TextStyle(
+                          fontSize: 11, color: SodfaStyles.textHint)),
+                  const SizedBox(width: 8),
+                  if (room.createdByAvatar != null &&
+                      room.createdByAvatar!.isNotEmpty)
+                    CircleAvatar(
+                      radius: 10,
+                      backgroundColor: SodfaStyles.primaryPurple.withOpacity(0.1),
+                      backgroundImage: NetworkImage(room.createdByAvatar!),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Row(
         children: [
-          const Icon(Icons.public, size: 18, color: Colors.grey),
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: SodfaStyles.primaryPurple.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.chat_bubble_outline,
+                size: 16, color: SodfaStyles.primaryPurple),
+          ),
           const SizedBox(width: 8),
-          Text('العراق', style: TextStyle(color: Colors.grey.shade600)),
+          const Text(
+            'غرف النقاش',
+            style: SodfaStyles.sectionTitle,
+          ),
           const Spacer(),
           Obx(() => Text(
-            '${roomProvider.rooms.length} غرفة',
-            style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
-          )),
+                '${roomProvider.rooms.length} غرفة',
+                style: SodfaStyles.sectionSubtitle,
+              )),
         ],
       ),
     );
@@ -157,12 +467,18 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.chat_bubble_outline, size: 80, color: Colors.grey.shade300),
+              Icon(Icons.chat_bubble_outline,
+                  size: 80, color: Colors.grey.shade300),
               const SizedBox(height: 16),
-              Text('لا توجد غرف', style: TextStyle(color: Colors.grey.shade500, fontSize: 18)),
+              const Text('لا توجد غرف',
+                  style: TextStyle(
+                      color: SodfaStyles.textSecondary, fontSize: 18)),
               const SizedBox(height: 8),
               ElevatedButton(
                 onPressed: () => Get.toNamed('/create-room'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: SodfaStyles.primaryPurple,
+                ),
                 child: const Text('إنشاء غرفة جديدة'),
               ),
             ],
@@ -172,7 +488,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return RefreshIndicator(
         onRefresh: () => roomProvider.fetchRooms(),
         child: ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           itemCount: roomProvider.rooms.length,
           itemBuilder: (context, index) {
             return _buildRoomCard(roomProvider.rooms[index]);
@@ -183,53 +499,97 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildRoomCard(RoomModel room) {
-    return Card(
+    final isVoiceRoom = room.type == 'voice' || room.category == 'voice';
+    return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(12),
-        leading: CircleAvatar(
-          radius: 24,
-          backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
-          child: Text(
-            room.name.isNotEmpty ? room.name[0].toUpperCase() : 'R',
-            style: const TextStyle(
-              color: AppTheme.primaryColor,
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-            ),
+      decoration: SodfaStyles.glassCardDecoration,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(SodfaStyles.cardBorderRadius),
+        onTap: () => _joinRoom(room),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: SodfaStyles.primaryPurple.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  isVoiceRoom ? Icons.wifi_tethering : Icons.chat,
+                  color: SodfaStyles.primaryPurple,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            room.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                              color: SodfaStyles.textPrimary,
+                            ),
+                          ),
+                        ),
+                        if (room.type == 'private')
+                          const Icon(Icons.lock,
+                              size: 14, color: SodfaStyles.softOrange),
+                        if (isVoiceRoom) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: SodfaStyles.successGreen.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text('صوتي',
+                                style: TextStyle(
+                                    fontSize: 9,
+                                    color: SodfaStyles.successGreen)),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.people,
+                            size: 12, color: SodfaStyles.textHint),
+                        const SizedBox(width: 4),
+                        Text('${room.memberCount}',
+                            style: const TextStyle(
+                                fontSize: 11, color: SodfaStyles.textHint)),
+                        if (room.description.isNotEmpty) ...[
+                          const SizedBox(width: 12),
+                          Flexible(
+                            child: Text(
+                              room.description,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  fontSize: 11, color: SodfaStyles.textHint),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_left, color: SodfaStyles.textHint),
+            ],
           ),
         ),
-        title: Text(
-          room.name,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (room.description.isNotEmpty)
-              Text(room.description, maxLines: 1, overflow: TextOverflow.ellipsis),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Icon(Icons.people, size: 14, color: Colors.grey.shade500),
-                const SizedBox(width: 4),
-                Text('${room.memberCount}', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
-                const SizedBox(width: 12),
-                Icon(Icons.category, size: 14, color: Colors.grey.shade500),
-                const SizedBox(width: 4),
-                Text(room.category, style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
-                if (room.type == 'private') ...[
-                  const SizedBox(width: 12),
-                  const Icon(Icons.lock, size: 14, color: Colors.orange),
-                  const SizedBox(width: 4),
-                  Text('خاص', style: TextStyle(fontSize: 12, color: Colors.orange.shade700)),
-                ],
-              ],
-            ),
-          ],
-        ),
-        trailing: const Icon(Icons.chevron_left),
-        onTap: () => _joinRoom(room),
       ),
     );
   }
@@ -248,11 +608,13 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Get.back(), child: const Text('إلغاء')),
+          TextButton(
+              onPressed: () => Get.back(), child: const Text('إلغاء')),
           ElevatedButton(
             onPressed: () async {
               Get.back();
-              await roomProvider.joinRoom(room.id, password: passController.text);
+              await roomProvider.joinRoom(room.id,
+                  password: passController.text);
               Get.toNamed('/room', arguments: room);
             },
             child: const Text('دخول'),
@@ -263,35 +625,5 @@ class _HomeScreenState extends State<HomeScreen> {
       roomProvider.joinRoom(room.id);
       Get.toNamed('/room', arguments: room);
     }
-  }
-
-  Widget _buildBottomNav() {
-    return Obx(() => BottomNavigationBar(
-      currentIndex: 0,
-      selectedItemColor: AppTheme.primaryColor,
-      items: [
-        const BottomNavigationBarItem(icon: Icon(Icons.home), label: 'الرئيسية'),
-        const BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'غرفتي'),
-        BottomNavigationBarItem(
-          icon: Obx(() => Badge(
-            label: Text('${auth.user.value?.balance.toInt() ?? 0}'),
-            child: const Icon(Icons.wallet),
-          )),
-          label: 'المحفظة',
-        ),
-        const BottomNavigationBarItem(icon: Icon(Icons.person), label: 'الملف'),
-        if (auth.user.value?.role == 'admin' || auth.user.value?.role == 'dev')
-          const BottomNavigationBarItem(icon: Icon(Icons.admin_panel_settings), label: 'الإدارة'),
-      ],
-      onTap: (index) {
-        switch (index) {
-          case 0: break;
-          case 1: Get.toNamed('/profile'); break;
-          case 2: Get.toNamed('/wallet'); break;
-          case 3: Get.toNamed('/profile'); break;
-          case 4: Get.toNamed('/admin'); break;
-        }
-      },
-    ));
   }
 }

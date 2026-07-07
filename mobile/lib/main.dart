@@ -6,11 +6,13 @@ import 'screens/auth/login_screen.dart';
 import 'screens/auth/phone_auth_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/rooms/room_screen.dart';
+import 'screens/rooms/voice_room_screen.dart';
 import 'screens/rooms/create_room_screen.dart';
 import 'screens/wallet/wallet_screen.dart';
 import 'screens/wallet/recharge_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/admin/admin_screen.dart';
+import 'screens/discover/discover_screen.dart';
 import 'services/api_service.dart';
 import 'services/socket_service.dart';
 import 'services/storage_service.dart';
@@ -53,7 +55,9 @@ class YallaNsuwalefApp extends StatelessWidget {
         GetPage(name: '/phone-auth', page: () => const PhoneAuthScreen()),
         GetPage(name: '/home', page: () => const HomeScreen()),
         GetPage(name: '/room', page: () => const RoomScreen()),
+        GetPage(name: '/voice-room', page: () => const VoiceRoomScreen()),
         GetPage(name: '/create-room', page: () => const CreateRoomScreen()),
+        GetPage(name: '/discover', page: () => const DiscoverScreen()),
         GetPage(name: '/wallet', page: () => const WalletScreen()),
         GetPage(name: '/recharge', page: () => const RechargeScreen()),
         GetPage(name: '/profile', page: () => const ProfileScreen()),

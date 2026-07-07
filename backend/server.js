@@ -17,6 +17,7 @@ const messageRoutes = require('./routes/messages');
 const walletRoutes = require('./routes/wallet');
 const adminRoutes = require('./routes/admin');
 const countryRoutes = require('./routes/countries');
+const discoverRoutes = require('./routes/discover');
 
 const app = express();
 const server = http.createServer(app);
@@ -57,6 +58,27 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/countries', countryRoutes);
+app.use('/api/discover', discoverRoutes);
+
+app.use('/api/gifts', (req, res) => {
+  res.json({
+    gifts: [
+      { id: 1, name: 'وردة', price: 100, icon: '🌹', category: 'flowers' },
+      { id: 2, name: 'قلب', price: 200, icon: '❤️', category: 'romantic' },
+      { id: 3, name: 'بوسة', price: 300, icon: '💋', category: 'romantic' },
+      { id: 4, name: 'نجمة', price: 500, icon: '⭐', category: 'general' },
+      { id: 5, name: 'كعكة', price: 800, icon: '🎂', category: 'celebrations' },
+      { id: 6, name: 'تاج', price: 1000, icon: '👑', category: 'premium' },
+      { id: 7, name: 'ألماسة', price: 2000, icon: '💎', category: 'premium' },
+      { id: 8, name: 'سيارة', price: 5000, icon: '🚗', category: 'luxury' },
+      { id: 9, name: 'يخت', price: 10000, icon: '🛥️', category: 'luxury' },
+      { id: 10, name: 'قصر', price: 20000, icon: '🏰', category: 'luxury' },
+      { id: 11, name: 'طائرة', price: 50000, icon: '✈️', category: 'limited' },
+      { id: 12, name: 'ألعاب نارية', price: 100000, icon: '🎆', category: 'limited' },
+    ],
+    currency: 'coin',
+  });
+});
 
 app.use((err, req, res, next) => {
   console.error(err.stack);

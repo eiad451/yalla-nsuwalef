@@ -4,6 +4,7 @@ const Message = require('../models/Message');
 const Room = require('../models/Room');
 
 const connectedUsers = new Map();
+const voiceRooms = new Map();
 
 const setupSocket = (io) => {
   io.use(async (socket, next) => {
@@ -208,6 +209,94 @@ const setupSocket = (io) => {
         io.to(roomId).emit('message-deleted', { messageId, roomId });
       } catch (error) {
         socket.emit('error', { message: error.message });
+      }
+    });
+
+    socket.on('join-voice-room', async (data) => {
+      try {
+        const { roomId, isSpeaker } = data;
+        const room = await Room.findById(roomId);
+        if (!room) {
+          return socket.emit('error', { message: 'Room not found' });
+        }
+
+        if (!voiceRooms.has(roomId)) {
+          voiceRooms.set(roomId, { speakers: [], listeners: [] });
+        }
+
+        const vr = voiceRooms.get(roomId);
+        const userData = {
+          userId: user._id.toString(),
+          username: user.username,
+          displayName: user.displayName,
+          avatar: user.avatar,
+          isSpeaking: false,
+          isMuted: !isSpeaker,
+        };
+
+        if (isSpeaker) {
+          vr.speakers.push(userData);
+        } else {
+          vr.listeners.push(userData);
+        }
+
+        socket.join(`voice:${roomId}`);
+        io.to(`voice:${roomId}`).emit('voice-room-update', vr);
+        socket.emit('voice-room-joined', { roomId, ...vr });
+      } catch (error) {
+        socket.emit('error', { message: error.message });
+      }
+    });
+
+    socket.on('leave-voice-room', async (data) => {
+      try {
+        const { roomId } = data;
+        const vr = voiceRooms.get(roomId);
+        if (vr) {
+          vr.speakers = vr.speakers.filter(s => s.userId !== user._id.toString());
+          vr.listeners = vr.listeners.filter(l => l.userId !== user._id.toString());
+          if (vr.speakers.length === 0 && vr.listeners.length === 0) {
+            voiceRooms.delete(roomId);
+          } else {
+            io.to(`voice:${roomId}`).emit('voice-room-update', vr);
+          }
+        }
+        socket.leave(`voice:${roomId}`);
+      } catch (error) {
+        socket.emit('error', { message: error.message });
+      }
+    });
+
+    socket.on('voice-toggle-mute', async (data) => {
+      try {
+        const { roomId, isMuted } = data;
+        const vr = voiceRooms.get(roomId);
+        if (vr) {
+          const speaker = vr.speakers.find(s => s.userId === user._id.toString());
+          if (speaker) {
+            speaker.isMuted = isMuted;
+          }
+          io.to(`voice:${roomId}`).emit('voice-room-update', vr);
+        }
+      } catch (error) {
+        socket.emit('error', { message: error.message });
+      }
+    });
+
+    socket.on('leave-all-voice-rooms', async () => {
+      for (const [roomId, vr] of voiceRooms.entries()) {
+        const wasSpeaker = vr.speakers.some(s => s.userId === user._id.toString());
+        const wasListener = vr.listeners.some(l => l.userId === user._id.toString());
+        if (wasSpeaker || wasListener) {
+          vr.speakers = vr.speakers.filter(s => s.userId !== user._id.toString());
+          vr.listeners = vr.listeners.filter(l => l.userId !== user._id.toString());
+          if (vr.speakers.length === 0 && vr.listeners.length === 0) {
+            voiceRooms.delete(roomId);
+          } else {
+            io.to(`voice:${roomId}`).emit('voice-room-update', vr);
+          }
+          socket.leave(`voice:${roomId}`);
+        }
       }
     });
 
