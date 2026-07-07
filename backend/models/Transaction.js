@@ -1,51 +1,18 @@
-const mongoose = require('mongoose');
+const { getCollection } = require('../config/file-db');
 
-const transactionSchema = new mongoose.Schema({
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
+module.exports = {
+  findById: function (id) {
+    const qb = getCollection('transactions').find({ _id: id });
+    qb._execOverride = async () => (await qb.exec())[0];
+    return qb;
   },
-  type: {
-    type: String,
-    enum: ['recharge', 'gift', 'withdraw', 'bonus', 'refund', 'admin'],
-    required: true,
+  findOne: function (q) {
+    const qb = getCollection('transactions').find(q);
+    qb._execOverride = async () => (await qb.exec())[0];
+    return qb;
   },
-  amount: {
-    type: Number,
-    required: true,
-  },
-  currency: {
-    type: String,
-    default: 'IQD',
-  },
-  paymentMethod: {
-    type: String,
-    enum: ['zain_cash', 'asia_cell', 'korek', 'mastercard', 'visa', 'paypal', 'bank_transfer', 'admin'],
-  },
-  status: {
-    type: String,
-    enum: ['pending', 'completed', 'failed', 'cancelled'],
-    default: 'completed',
-  },
-  referenceId: {
-    type: String,
-  },
-  phoneNumber: {
-    type: String,
-  },
-  description: {
-    type: String,
-  },
-  processedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-  },
-}, {
-  timestamps: true,
-});
-
-transactionSchema.index({ user: 1, createdAt: -1 });
-transactionSchema.index({ status: 1, type: 1 });
-
-module.exports = mongoose.model('Transaction', transactionSchema);
+  find: function (q = {}) { return getCollection('transactions').find(q); },
+  create: async (d) => getCollection('transactions').create(d),
+  countDocuments: async (q = {}) => getCollection('transactions').countDocuments(q),
+  deleteMany: async (q) => getCollection('transactions').deleteMany(q),
+};

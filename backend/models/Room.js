@@ -1,78 +1,20 @@
-const mongoose = require('mongoose');
+const { getCollection } = require('../config/file-db');
 
-const roomSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true,
+module.exports = {
+  findById: function (id) {
+    const qb = getCollection('rooms').find({ _id: id });
+    qb._execOverride = async () => (await qb.exec())[0];
+    return qb;
   },
-  description: {
-    type: String,
-    default: '',
+  findOne: function (q) {
+    const qb = getCollection('rooms').find(q);
+    qb._execOverride = async () => (await qb.exec())[0];
+    return qb;
   },
-  image: {
-    type: String,
-    default: '',
-  },
-  type: {
-    type: String,
-    enum: ['public', 'private', 'group'],
-    default: 'public',
-  },
-  category: {
-    type: String,
-    default: 'general',
-  },
-  password: {
-    type: String,
-    default: '',
-  },
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-  },
-  admins: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-  }],
-  members: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-  }],
-  bannedMembers: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-  }],
-  maxMembers: {
-    type: Number,
-    default: 500,
-  },
-  isActive: {
-    type: Boolean,
-    default: true,
-  },
-  lastMessage: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Message',
-  },
-  country: {
-    type: String,
-    default: 'all',
-  },
-  countryCode: {
-    type: String,
-    default: '+964',
-  },
-  tags: [{
-    type: String,
-  }],
-}, {
-  timestamps: true,
-});
-
-roomSchema.index({ name: 'text', description: 'text' });
-roomSchema.index({ category: 1, country: 1 });
-roomSchema.index({ isActive: 1, type: 1 });
-
-module.exports = mongoose.model('Room', roomSchema);
+  find: function (q = {}) { return getCollection('rooms').find(q); },
+  create: async (d) => getCollection('rooms').create(d),
+  findByIdAndUpdate: async (id, d, o) => getCollection('rooms').findByIdAndUpdate(id, d, o),
+  findByIdAndDelete: async (id) => getCollection('rooms').findByIdAndDelete(id),
+  countDocuments: async (q = {}) => getCollection('rooms').countDocuments(q),
+  deleteMany: async (q) => getCollection('rooms').deleteMany(q),
+};

@@ -1,16 +1,13 @@
-const mongoose = require('mongoose');
+const path = require('path');
+const fs = require('fs');
 
 const connectDB = async () => {
-  try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
-  } catch (error) {
-    console.error(`Error: ${error.message}`);
-    process.exit(1);
+  const dataDir = path.join(__dirname, '..', 'data');
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
   }
+  console.log('File-based database initialized at:', dataDir);
+  return true;
 };
 
 module.exports = connectDB;

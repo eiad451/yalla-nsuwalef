@@ -1,99 +1,38 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+const { getCollection } = require('../config/file-db');
 
-const userSchema = new mongoose.Schema({
-  phone: {
-    type: String,
-    unique: true,
-    sparse: true,
-  },
-  email: {
-    type: String,
-    sparse: true,
-  },
-  googleId: {
-    type: String,
-    sparse: true,
-  },
-  username: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-  displayName: {
-    type: String,
-    trim: true,
-  },
-  avatar: {
-    type: String,
-    default: '',
-  },
-  bio: {
-    type: String,
-    default: '',
-  },
-  countryCode: {
-    type: String,
-    default: '+964',
-  },
-  country: {
-    type: String,
-    default: 'IRQ',
-  },
-  balance: {
-    type: Number,
-    default: 0,
-  },
-  totalRecharged: {
-    type: Number,
-    default: 0,
-  },
-  role: {
-    type: String,
-    enum: ['user', 'admin', 'dev'],
-    default: 'user',
-  },
-  isVerified: {
-    type: Boolean,
-    default: false,
-  },
-  isPhoneVerified: {
-    type: Boolean,
-    default: false,
-  },
-  isOnline: {
-    type: Boolean,
-    default: false,
-  },
-  lastSeen: {
-    type: Date,
-    default: Date.now,
-  },
-  fcmToken: {
-    type: String,
-    default: '',
-  },
-  deviceId: {
-    type: String,
-  },
-  authMethod: {
-    type: String,
-    enum: ['phone', 'google', 'email'],
-    default: 'phone',
-  },
-}, {
-  timestamps: true,
-});
+const col = getCollection('users');
 
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
-});
+function sanitize(doc) {
+  if (!doc) return null;
+  delete doc.password;
+  return doc;
+}
 
-userSchema.methods.matchPassword = async function (enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password);
+module.exports = {
+  findById: (id) => {
+    const qb = col.findById(id);
+    const origExec = qb.exec.bind(qb);
+    qb.exec = async () => sanitize(await origExec());
+    return qb;
+  },
+  findOne: (q) => {
+    const qb = col.find(q).limit(1);
+    qb._single = true;
+    const origExec = qb.exec.bind(qb);
+    qb.exec = async () => sanitize(await origExec());
+    return qb;
+  },
+  find: (q = {}) => {
+    const qb = col.find(q);
+    const origExec = qb.exec.bind(qb);
+    qb.exec = async () => (await origExec()).map(sanitize);
+    return qb;
+  },
+  create: async (d) => sanitize(await col.create(d)),
+  findByIdAndUpdate: async (id, d, o) => sanitize(await col.findByIdAndUpdate(id, d, o)),
+  findByIdAndDelete: async (id) => sanitize(await col.findByIdAndDelete(id)),
+  findOneAndUpdate: async (q, d, o) => sanitize(await col.findOneAndUpdate(q, d, o)),
+  countDocuments: async (q = {}) => col.countDocuments(q),
+  deleteMany: async (q) => col.deleteMany(q),
+  aggregate: async (p) => col.aggregate(p),
 };
-
-module.exports = mongoose.model('User', userSchema);

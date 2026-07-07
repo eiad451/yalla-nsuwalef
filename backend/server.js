@@ -1,7 +1,6 @@
 const express = require('express');
 const http = require('http');
 const socketIO = require('socket.io');
-const mongoose = require('mongoose');
 const cors = require('cors');
 const morgan = require('morgan');
 const path = require('path');
