@@ -1,0 +1,54 @@
+name: yalla_nsuwalef
+description: يلا نسوالف - تطبيق دردشة عربي
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+  get: ^4.6.6
+  http: ^1.1.0
+  socket_io_client: ^2.0.3+1
+  shared_preferences: ^2.2.2
+  firebase_core: ^2.24.2
+  firebase_auth: ^4.16.0
+  google_sign_in: ^6.1.5
+  image_picker: ^1.0.4
+  cached_network_image: ^3.3.0
+  emoji_picker_flutter: ^1.6.2
+  intl_phone_number_input: ^0.7.3+1
+  intl: ^0.18.1
+  flutter_local_notifications: ^16.3.2
+  url_launcher: ^6.2.1
+  permission_handler: ^11.1.0
+  audioplayers: ^5.2.1
+  record: ^5.0.4
+  fluttertoast: ^8.2.4
+  shimmer: ^3.0.0
+  image_cropper: ^5.0.1
+  file_picker: ^6.1.1
+  connectivity_plus: ^5.0.2
+  flutter_svg: ^2.0.9
+  lottie: ^2.7.0
+  country_picker: ^2.0.22
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/fonts/
+  fonts:
+    - family: Cairo
+      fonts:
+        - asset: assets/fonts/Cairo-Regular.ttf
+        - asset: assets/fonts/Cairo-Bold.ttf
+          weight: 700
