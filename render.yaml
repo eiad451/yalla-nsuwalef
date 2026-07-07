@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: yalla-nsuwalef
+    runtime: node
+    repo: https://github.com/eiad451/yalla-nsuwalef
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DEV_PHONE
+        value: 07744572152
+      - key: PORT
+        value: "10000"
+    region: oregon
+    buildCommand: npm install
+    startCommand: node backend/server.js
+    healthCheckPath: /api/health
+    autoDeploy: true
