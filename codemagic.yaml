@@ -1,0 +1,21 @@
+workflows:
+  build-apk:
+    name: Build Android APK
+    instance_type: mac_mini_m2
+    environment:
+      groups:
+        - google_credentials
+      vars:
+        CM_FLUTTER: stable
+      flutter: stable
+      xcode: latest
+    scripts:
+      - cd mobile && flutter pub get
+      - cd mobile && flutter build apk --release --split-per-abi
+    artifacts:
+      - mobile/build/app/outputs/flutter-apk/*.apk
+    publishing:
+      github_releases:
+        enabled: true
+        draft: false
+        prerelease: false
